@@ -1,0 +1,31 @@
+!SESSION 2024-03-27 09:41:57.932 -----------------------------------------------
+eclipse.buildId=Version 1.14.1
+java.version=17.0.8.1
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2024-03-27 09:42:28.340
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2024-03-27 09:42:28.342
+!MESSAGE Log4j2 initialized with config file C:\Users\belaa\Desktop\Driver Development\STmDriverDevelopment\stm32407xx_Drivers\.metadata\.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2024-03-27 09:42:32.629
+!MESSAGE Started RMI Server, listening on port 41337
+!SESSION 2024-03-27 09:50:50.462 -----------------------------------------------
+eclipse.buildId=Version 1.14.1
+java.version=17.0.8.1
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Framework arguments:  C:\Users\belaa\Desktop\Driver Development\STmDriverDevelopment\stm32407xx_Drivers\.project
+Command-line arguments:  -os win32 -ws win32 -arch x86_64 C:\Users\belaa\Desktop\Driver Development\STmDriverDevelopment\stm32407xx_Drivers\.project
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2024-03-27 09:50:58.002
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2024-03-27 09:50:58.003
+!MESSAGE Log4j2 initialized with config file C:\Users\belaa\Desktop\Driver Development\STmDriverDevelopment\stm32407xx_Drivers\.metadata\.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2024-03-27 09:51:00.297
+!MESSAGE Started RMI Server, listening on port 41337
