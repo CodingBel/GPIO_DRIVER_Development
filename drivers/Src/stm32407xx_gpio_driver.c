@@ -125,6 +125,39 @@ void GPIO_Init(GPIO_Handle_t* pGPIO_Handle){
 	}
 	else {
 			// For the interrupt modes
+		if (pGPIO_Handle->GPIO_PinConfig.GPIO_PinMode == GPIO_MODE_IT_FT){
+			// This is a Falling edge trigger
+			// 1. Configure the FTSR (Falling Trigger Selection Register)
+
+			EXTI->FTSR |=  (1 << pGPIO_Handle->GPIO_PinConfig.GPIO_PinNumber);
+			EXTI->RTSR &= ~(1 << pGPIO_Handle->GPIO_PinConfig.GPIO_PinNumber);
+		}
+
+		else if (pGPIO_Handle->GPIO_PinConfig.GPIO_PinMode == GPIO_MODE_IT_RT){
+			// This is a rising edge trigger
+			// 1. Configure the RTSR (Rising Trigger Selection Register)
+
+			EXTI->RTSR |=  (1 << pGPIO_Handle->GPIO_PinConfig.GPIO_PinNumber);
+			EXTI->FTSR &= ~(1 << pGPIO_Handle->GPIO_PinConfig.GPIO_PinNumber);
+		}
+
+		else if (pGPIO_Handle->GPIO_PinConfig.GPIO_PinMode == GPIO_MODE_IT_RFT){
+			// This is a rising and falling edge trigger
+			EXTI->FTSR |=  (1 << pGPIO_Handle->GPIO_PinConfig.GPIO_PinNumber);
+			EXTI->RTSR |=  (1 << pGPIO_Handle->GPIO_PinConfig.GPIO_PinNumber);
+		}
+
+		// 2. Configure the GPIO Port Selection in SYSCFG_EXTICR
+		uint8_t index  = pGPIO_Handle->GPIO_PinConfig.GPIO_PinNumber / 4;
+		uint8_t nibble = pGPIO_Handle->GPIO_PinConfig.GPIO_PinNumber % 4;
+
+		uint8_t portCode = GPIO_BASEADDR_TO_CODE (pGPIO_Handle->pGPIOX);
+
+		SYSCFG_PCLK_EN(); 	// Enable the SYSCFG clock
+		SYSCFG->EXTICR[index] = portCode << ((nibble * 4)); // X4 for selecting the nibble
+
+		// 3. Enable the EXTI interrupt delivery using IMR (Interrupt Mask Register)
+		EXTI->IMR |= (1 << pGPIO_Handle->GPIO_PinConfig.GPIO_PinNumber);
 	}
 
 	// 2. Configure the Speed
@@ -318,12 +351,11 @@ void GPIO_ToggleOutputPin(GPIO_RegDef_t* pGPIOx, uint8_t PinNumber){
 
 
 /***********************************************************************
- * @fn Name		- GPIO_IRQConfig
+ * @fn Name		- GPIO_IRQ_Interrupt_Config
  *
- * @brief		- This function is used to configure the Interrupt for a GPIO port
+ * @brief		- This function is used to Enable and disable the Interrupt for a GPIO Peripherals
  *
- * @param[in]	- The IRQ number
- * @param[in]	- The Priority of interrupt
+ * @param[in]	- The IRQ (Interrupt Request)number
  * @param[in]	- ENABLE or DISABLE macros
  *
  * @return 		- none
@@ -331,8 +363,68 @@ void GPIO_ToggleOutputPin(GPIO_RegDef_t* pGPIOx, uint8_t PinNumber){
  * @note		- none
  *
  */
-void GPIO_IRQConfig(uint8_t IRQNumber, uint8_t IRQPriority, uint8_t EnorDi){
+void GPIO_IRQInterruptConfig(uint8_t IRQNumber, uint8_t EnorDi){
+// This is for the MCU's IRQ number and ARM's NVIC mapping
+// ARM Side configuration
+// However, the MCU only utilizes 81 IRQ for it's peripherals' interrupts in its Vector table.
 
+	if (EnorDi == ENABLE){ // For enabling the interrupt registers
+		if (IRQNumber <= 31){
+			// IRQNumber lies in the ISER0 Register
+			*NVIC_ISER0 |= (1 << IRQNumber);
+		}
+		else if (IRQNumber > 31 && IRQNumber < 64){
+			// IRQNumber lies in the ISER1 Register
+			*NVIC_ISER1 |= (1 << (IRQNumber % 32));
+		}
+		else if (IRQNumber >= 64 && IRQNumber < 96){
+			// IRQNumber lies in the ISER2 Register
+			*NVIC_ISER2 |= (1 << (IRQNumber % 64));
+		}
+	}
+
+	else { // For Disabling the interrupts by using the ICER (Clear Interrupt) register
+		if (IRQNumber <= 31){ // for IRQs 0 - 31
+			// IRQNumber lies in the ICER0 Register
+			*NVIC_ICER0 |= (1 << IRQNumber);
+		}
+		else if (IRQNumber > 31 && IRQNumber < 64){ // for IRQs 32 - 63
+			// IRQNumber lies in the ICER1 Register
+			*NVIC_ICER1 |= (1 << (IRQNumber % 32));
+		}
+		else if (IRQNumber >= 64 && IRQNumber < 96){ // for IRQs 64 - 88
+			// IRQNumber lies in the ICER2 Register
+			*NVIC_ICER2 |= (1 << (IRQNumber % 64));
+		}
+	}
+}
+
+
+/***********************************************************************
+ * NOTE: The ARM Cortex Mx processor has 60 32-bit interrupt registers from IPR0 - IPR059
+ * Each register holds the priority value for 4 IRQs and Each byte in the IPRx register holds
+ * the priority value for that IRQ ranges from 0 - 15 which is MCU Specific
+ * 0 - 15 because, In each byte only the 4 MSB bits are used. The 4 LSB bits are N/A Non applicable
+ *
+ * @fn Name		- GPIO_IRQ_Priotity_Config
+ *
+ * @brief		- This function is used to set the priority for GPIO interrupts
+ *
+ * @param[in]	- The IRQ (Interrupt Request)number
+ * @param[in]	- The IRQ priority value
+ *
+ * @return 		- none
+ *
+ * @note		- none
+ *
+ */
+void GPIO_IRQPriorityConfig (uint8_t IRQNumber, uint8_t IRQPriority){
+	uint8_t IPR_reg = IRQNumber / 4;  			// For selecting 0 - 59 IPRx registers
+	uint8_t byte_section = IRQNumber % 4;
+
+	uint8_t shift_amount = (8 * byte_section) + (8 - NO_OF_PR_BITS_IMPLEMENTED);
+
+	*(NVIC_PR_BASE_ADDR + IPR_reg) |= (IRQPriority << shift_amount);
 }
 
 
@@ -351,4 +443,9 @@ void GPIO_IRQConfig(uint8_t IRQNumber, uint8_t IRQPriority, uint8_t EnorDi){
  */
 void GPIO_IRQHandling(uint8_t PinNumber){
 
+	if ((EXTI->PR) & (1 << PinNumber)){
+		// Clear the EXTI PR register corresponding to the pin
+		// Clear by writing 1
+		EXTI->PR |= (1 << PinNumber);
+	}
 }

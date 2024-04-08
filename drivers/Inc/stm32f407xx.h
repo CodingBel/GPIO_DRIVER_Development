@@ -11,6 +11,30 @@
 #include<stdint.h>
 #define __vo volatile
 
+/******************************* ARM Processor specific Registers **********************************
+ *
+ * 			ARM Cortex Mx NVIC ISER Registers Address
+ * */
+#define NVIC_ISER0    ((__vo uint32_t*)0xE000E100)
+#define NVIC_ISER1    ((__vo uint32_t*)0xE000E104)
+#define NVIC_ISER2    ((__vo uint32_t*)0xE000E108)
+
+/*
+ * 			ARM Cortex Mx NVIC ICER Registers Address
+ * */
+#define NVIC_ICER0    ((__vo uint32_t*)0xE000E180)
+#define NVIC_ICER1    ((__vo uint32_t*)0xE000E184)
+#define NVIC_ICER2    ((__vo uint32_t*)0xE000E188)
+
+/*
+ * 			ARM Cortex Mx NVIC_IPR Registers Address
+ * */
+#define NVIC_PR_BASE_ADDR	((__vo uint32_t*)0xE000E400)
+
+
+
+
+
 /*
  * Define the Base addresses for FLASH and SRAM memories
  * */
@@ -40,6 +64,40 @@
 
 #define GPIO_PIN_SET	SET
 #define GPIO_PIN_RESET	RESET
+
+#define NO_OF_PR_BITS_IMPLEMENTED	4
+
+//NOTE these are the Interrupt request numbers for the stm32f407xx MCU.
+// The IRQ numbers are found on the TRM's Vector table
+#define IRQ_NO_EXTI0 		6
+#define IRQ_NO_EXTI1 		7
+#define IRQ_NO_EXTI2 		8
+#define IRQ_NO_EXTI3 		9
+#define IRQ_NO_EXTI4 		10
+#define IRQ_NO_EXTI9_5  	23
+#define IRQ_NO_EXTI15_10 	40
+
+
+/*
+ * macros for all the possible priority levels
+ * */
+#define NVIC_IRQ_PRI0 		0
+#define NVIC_IRQ_PRI1 		1
+#define NVIC_IRQ_PRI2 		2
+#define NVIC_IRQ_PRI3 		3
+#define NVIC_IRQ_PRI4 		4
+#define NVIC_IRQ_PRI5 		5
+#define NVIC_IRQ_PRI6 		6
+#define NVIC_IRQ_PRI7 		7
+#define NVIC_IRQ_PRI8 		8
+#define NVIC_IRQ_PRI9 		9
+#define NVIC_IRQ_PRI10 		10
+#define NVIC_IRQ_PRI11 		11
+#define NVIC_IRQ_PRI12 		12
+#define NVIC_IRQ_PRI13 		13
+#define NVIC_IRQ_PRI14 		14
+#define NVIC_IRQ_PRI15 		15
+
 
 /*
  * Define the AHB1 bus peripherals
@@ -136,7 +194,6 @@ typedef struct {
 #define GPIOH					((GPIO_RegDef_t*)GPIOH_BASE_ADDR)
 #define GPIOI					((GPIO_RegDef_t*)GPIOI_BASE_ADDR)
 
-
 /* struct for RCC registers*/
 typedef struct{
 	  __vo uint32_t CR;            /*!< TODO,     										Address offset: 0x00 */
@@ -177,6 +234,39 @@ typedef struct{
 }RCC_RegDef_t;
 #define RCC 					((RCC_RegDef_t*)RCC_BASE_ADDR)
 
+
+/*
+ * Peripheral definition struct for the EXTI
+ * */
+typedef struct{
+	__vo uint32_t IMR;		  	/*!<Interrupt mask register Address offset: 0x00>*/
+	__vo uint32_t EMR;			/*!<Event mask register 	Address offset: 0x04>*/
+	__vo uint32_t RTSR;			/*!<Rising trigger selection register Address offset: 0x08>*/
+	__vo uint32_t FTSR;			/*!<Falling trigger selection register Address offset: 0x0C>*/
+	__vo uint32_t SWIER;		/*!<Software interrupt event register Address offset: 0x10>*/
+	__vo uint32_t PR;			/*!<Pending register Address offset: 0x14>*/
+}EXTI_RegDef_t;
+
+#define EXTI 					((EXTI_RegDef_t*)EXTI_BASE_ADDR)
+
+
+/*
+ * Peripheral defintion struct for SYSCFG (System Configuration Controller )
+ * */
+
+typedef struct{
+	__vo uint32_t MEMRMP;		/*!<memory remap register. Address offset: 0x00>*/
+	__vo uint32_t PMC;			/*!<peripheral mode configuration register. Address offset: 0x04>*/
+	__vo uint32_t EXTICR[4];	/*!<external interrupt configuration registers. Address offset: 0x08 - 0x14>*/
+	uint32_t RESERVED[2]; 		/*!<0x18 and 0x1C are reserved> */
+	__vo uint32_t CMPCR;		/*!<Compensation cell control register. Address offset: 0x20>*/
+}SYSCFG_RegDef_t;
+
+#define SYSCFG				((SYSCFG_RegDef_t*)SYSCFG_BASE_ADDR)
+
+
+
+
 /* Create C macro FUNCTIONS for Enabling GPIO Peripheral Clocks */
 /* Example: for enabling the GPIOA clock enable which is under AHB1ENR
  */
@@ -203,7 +293,20 @@ typedef struct{
 #define GPIOH_REG_RESET()  	do {(RCC->AHB1RSTR |= (1 << 7)); (RCC->AHB1RSTR &= ~(1 << 7));}while(0)
 #define GPIOI_REG_RESET()  	do {(RCC->AHB1RSTR |= (1 << 8)); (RCC->AHB1RSTR &= ~(1 << 8));}while(0)
 
+/*
+ * C macro for choosing the GPIO Ports
+ * NOTE: 0 is for selecting Port A, 1 for Port B, 2 for Port C....
+ * */
 
+#define GPIO_BASEADDR_TO_CODE(x)     ((x == GPIOA) ? 0 : \
+									  (x == GPIOB) ? 1 : \
+									  (x == GPIOC) ? 2 : \
+									  (x == GPIOD) ? 3 : \
+									  (x == GPIOE) ? 4 : \
+									  (x == GPIOF) ? 5 : \
+									  (x == GPIOG) ? 6 : \
+									  (x == GPIOH) ? 7 : \
+									  (x == GPIOI) ? 8 : 0)
 
 /*
  * C macro functions for Enabling I2Cx Clocks
